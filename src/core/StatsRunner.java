@@ -57,13 +57,40 @@ public final class StatsRunner {
             Store them in a List<Callable<Stats>>.
          */
 
+        List<Callable<Stats>> tasks = new ArrayList<>();
+        int chunkSize = (int) Math.ceil((double) data.length / Config.CORES);
+
+        for (int i = 0; i < Config.CORES; i++) {
+            int start = i * chunkSize;
+            int end = Math.min(start + chunkSize, data.length);
+            tasks.add(new StatsTask(data, start, end));
+        }
+
         Stats total = new Stats(0, 0.0, 0.0,
                 Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
 
-        /* TODO
-            Use pool.invokeAll(tasks) to execute all tasks and collect Future<Stats> results.
-            Then, iterate over futures, call get() on each, and merge partial results using Stats.plus().
-         */
+        try {
+            List<Future<Stats>> futures = pool.invokeAll(tasks);
+
+    
+            for (Future<Stats> future : futures) {
+                try {
+                    Stats partialStats = future.get();
+                    total = total.plus(partialStats);
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e.getCause());
+                }
+            }
+            } catch (InterruptedException e) {
+                pool.shutdownNow();
+                Thread.currentThread().interrupt();
+                throw e;
+            } finally {
+                if (!pool.isShutdown()) {
+                    pool.shutdown();
+                }
+            }
+
 
         return getRunResult(label, startTime, total);
     }

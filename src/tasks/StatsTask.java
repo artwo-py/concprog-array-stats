@@ -35,8 +35,23 @@ public final class StatsTask implements Callable<Stats> {
         long count = 0;
         double sum = 0.0, sumSq = 0.0;
         double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY;
+        
+        min = data[start];
+        max = data[end-1];
 
-        // TODO: Implement the computation of the values for a Stats object
+        for (int i = start; i < end; i++) {
+            count++;
+            double x = data[i];
+            sumSq += (x) * (x);
+            sum += x;
+            if (x < min) {
+                min = x;
+            }
+
+            if (x > max) {
+                max = x;
+            }
+        }
 
         return new Stats(count, sum, sumSq, min, max);
     }

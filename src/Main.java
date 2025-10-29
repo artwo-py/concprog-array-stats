@@ -3,7 +3,9 @@ import core.StatsRunner;
 import model.RunResult;
 
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Entry point for the program.
@@ -39,7 +41,10 @@ public final class Main {
         RunResult single = runner.runSingleThreaded("single");
         RunResult fixed  = runner.runWithPool(() -> Executors.newFixedThreadPool(Config.CORES),
                                         "fixed(" + Config.CORES + ")");
-        RunResult cached = runner.runWithPool(java.util.concurrent.Executors::newCachedThreadPool, "cached");
+        RunResult cached = runner.runWithPool(() -> {
+            ExecutorService pool = Executors.newCachedThreadPool();
+            return pool;
+        }, "cached");   
 
         System.out.println("Pool     | min        | max        | mean       | stddev     | time (ms)");
         System.out.println("---------|------------|------------|------------|------------|---------");
@@ -48,7 +53,7 @@ public final class Main {
         System.out.println(cached);
 
         System.out.printf("%nSpeedup vs single: fixed = %.2fx, cached = %.2fx%n",
-                single.getTime() / fixed.getTime(), single.getTime() / cached.getTime());
+        single.getTime() / fixed.getTime(), single.getTime() / cached.getTime());
     }
 
     /**
@@ -61,7 +66,7 @@ public final class Main {
         Random rnd = new Random();
         double[] a = new double[n];
         for (int i = 0; i < n; i++) {
-            a[i] = rnd.nextDouble(1_000_000.0);
+            a[i] = rnd.nextDouble() * 1_000_000.0;
         }
         return a;
     }
